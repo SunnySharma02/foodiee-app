@@ -1,0 +1,5 @@
+JWT_SECRET= Secret Key
+STRIPE_SECRET_KEY= Stripe API Key
+MONGO_URL= Database Connection Link
+PORT= port
+FRONTEND_URL= Frontend Url

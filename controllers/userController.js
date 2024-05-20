@@ -2,6 +2,12 @@ import userModel from "../models/userModel.js";
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcrypt'
 import validator from 'validator'
+import tokenModel from "../models/tokenModel.js"
+import verifyemail from "./emailVerificationController.js";
+import dotenv from 'dotenv';
+
+dotenv.config();
+
 
 // Login User
 const loginUser = async (req,res) => {
@@ -12,6 +18,10 @@ const loginUser = async (req,res) => {
             return res.json({success:false, message:"User doesn't exists"})
         }
 
+        if (!user.verified) {
+            return res.json({success: false, message: "User is not verified"})
+        }
+
         const isMatch = await bcrypt.compare(password,user.password)
 
         if (!isMatch) {
@@ -19,7 +29,7 @@ const loginUser = async (req,res) => {
         }
 
         const token  = createToken(user._id)
-        res.json({success:true, token})
+        res.json({success:true, token, verified:user.verified})
 
     } catch (error) {
         console.log(error)
@@ -62,7 +72,17 @@ const registerUser = async (req,res) => {
 
         const user = await newUser.save()
         const token = createToken(user._id)
-        res.json({success:true, token})
+
+        const verifyToken = new tokenModel ({
+            userId: user._id,
+            token
+        })
+        
+        await verifyToken.save()
+
+        const link = `${process.env.BACKEND_URL}/api/user/confirm/${verifyToken.token}`
+        await verifyemail(newUser.email, link)
+        res.json({success:true, message:"Email send check your mail", token:verifyToken.token})
 
     } catch (error) {
         console.log(error)
@@ -70,4 +90,39 @@ const registerUser = async (req,res) => {
     }
 }
 
-export {loginUser, registerUser}
+const verifyUser = async (req,res) =>{
+    try {
+        const token = await tokenModel.findOne({
+            token:req.params.token,
+        })
+        if (!token) {
+            return res.json({ success: false, message: "Invalid or expired token" });
+        }
+
+        await userModel.updateOne({ _id: token.userId }, { $set: { verified: true } });
+        await tokenModel.findByIdAndDelete(token._id);
+        res.send(
+            `<div style="display: flex; justify-content: center; align-items: center; flex-direction: column; gap: 10px;">
+                <h1>Your email is now verified</h1>
+                <p>Now you can login</p>
+                <p id="countdown">Redirecting in 5 seconds...</p>
+                <script>
+                    let countdown = 5;
+                    const countdownElement = document.getElementById('countdown');
+                    const interval = setInterval(() => {
+                    countdown -= 1;
+                    countdownElement.textContent = 'Redirecting in ' + countdown + ' seconds...';
+                    if (countdown <= 0) {
+                        clearInterval(interval);
+                        window.location.href = 'http://localhost:3001';
+                    }
+                    }, 1000);
+                </script>
+            </div>`)
+    } catch (error) {
+        console.log(error)
+        res.json({success:false, message:"Error"})
+    }
+}
+
+export {loginUser, registerUser, verifyUser}

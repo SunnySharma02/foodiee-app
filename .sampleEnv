@@ -3,3 +3,6 @@ STRIPE_SECRET_KEY= Stripe API Key
 MONGO_URL= Database Connection Link
 PORT= port
 FRONTEND_URL= Frontend Url
+BACKEND_URL= Backend Url
+FOODIEE_MAIL= Sender's Mail
+FOODIEE_PASS= Sender's App Password

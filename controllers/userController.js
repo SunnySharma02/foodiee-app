@@ -114,7 +114,7 @@ const verifyUser = async (req,res) =>{
                     countdownElement.textContent = 'Redirecting in ' + countdown + ' seconds...';
                     if (countdown <= 0) {
                         clearInterval(interval);
-                        window.location.href = 'http://localhost:3001';
+                        window.location.href = 'https://app-foodiee.vercel.app';
                     }
                     }, 1000);
                 </script>
